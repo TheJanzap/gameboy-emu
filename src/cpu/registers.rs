@@ -1,8 +1,8 @@
 use std::ops::{Shl, Shr};
 
-/// The CPU registers of the Game Boy's CPU
-/// Some registers can be combined:
-/// af, bc, de, hl
+/// The CPU registers of the Game Boy's CPU.
+/// Some registers can be combined to 16-bit registers:
+/// `af`, `bc`, `de`, `hl`
 #[derive(Default)]
 pub(super) struct Registers {
     pub(super) a: u8,

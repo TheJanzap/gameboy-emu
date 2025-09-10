@@ -1,5 +1,5 @@
 //! Contains the optable that maps all opcodes to their respective instruction
-//! Taken from the opcode reference at https://gbdev.io/gb-opcodes/optables/
+//! Taken from the opcode reference at <https://gbdev.io/gb-opcodes/optables/>
 use crate::cpu::instructions::{Instruction, TargetRegister8};
 use crate::cpu::registers::U3;
 
