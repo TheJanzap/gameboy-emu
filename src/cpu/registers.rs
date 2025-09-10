@@ -131,4 +131,13 @@ mod tests {
         let result = registers.get_bc();
         assert_eq!(result, value);
     }
+
+    #[test]
+    fn set_f_as_u8() {
+        let mut registers = Registers::default();
+        let input = 0b1001_0000;
+        registers.f = input.into();
+        let result: u8 = registers.f.into();
+        assert_eq!(result, input);
+    }
 }
