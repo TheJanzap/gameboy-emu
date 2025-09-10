@@ -1,7 +1,12 @@
-use crate::cpu::registers::{Registers, U3};
+mod opcodes;
+pub(crate) mod parameter;
+
+use super::Cpu;
+use super::registers::U3;
+use parameter::{TargetRegister8, TargetRegister16};
 
 /// The assembly instructions the emulator can execute.
-enum Instruction {
+pub(super) enum Instruction {
     /// Add the value in r8 to A
     Add(TargetRegister8),
     /// Add the value in r16 to HL
@@ -62,32 +67,21 @@ enum Instruction {
     Swap(TargetRegister8),
 }
 
-/// Which 8-bit register an instruction should affect. Note that F is missing.
-enum TargetRegister8 {
-    A,
-    B,
-    C,
-    D,
-    E,
-    H,
-    L,
-}
-
-/// Combined 16-bit registers
-enum TargetRegister16 {
-    BC,
-    DE,
-    HL,
-}
-
-#[derive(Default)]
-struct Cpu {
-    registers: Registers,
+impl Instruction {
+    /// Convert a byte stored in memory into an Instruction.
+    /// If `prefixed` is set, the byte will be interpreted as the start of a prefix instruction.
+    /// Returns `None` if the opcode is invalid.
+    pub(super) fn from_byte(byte: u8, prefixed: bool) -> Option<Self> {
+        match prefixed {
+            true => opcodes::get_opcode_unprefixed(byte),
+            false => Some(opcodes::get_opcode_prefixed(byte)),
+        }
+    }
 }
 
 impl Cpu {
     /// Execute an instruction on the CPU
-    fn execute(&mut self, instruction: Instruction) {
+    pub(super) fn execute(&mut self, instruction: Instruction) -> u16 {
         match instruction {
             Instruction::Add(r8) => self.add_a(r8),
             Instruction::AddHl(r8) => self.add_hl(r8),
@@ -118,41 +112,10 @@ impl Cpu {
             Instruction::Sra(r8) => self.shift_right_arithmetically(r8),
             Instruction::Sla(r8) => self.shift_left_arithmetically(r8),
             Instruction::Swap(r8) => self.swap(r8),
-        }
-    }
-
-    /// Gets the value of an 8-bit register
-    fn get_r8_value(&self, target: TargetRegister8) -> u8 {
-        match target {
-            TargetRegister8::A => self.registers.a,
-            TargetRegister8::B => self.registers.b,
-            TargetRegister8::C => self.registers.c,
-            TargetRegister8::D => self.registers.d,
-            TargetRegister8::E => self.registers.e,
-            TargetRegister8::H => self.registers.h,
-            TargetRegister8::L => self.registers.l,
-        }
-    }
-
-    /// Gets a reference to an 8-bit register. Useful when the register needs to be written to.
-    fn get_r8_ref(&mut self, target: TargetRegister8) -> &mut u8 {
-        match target {
-            TargetRegister8::A => &mut self.registers.a,
-            TargetRegister8::B => &mut self.registers.b,
-            TargetRegister8::C => &mut self.registers.c,
-            TargetRegister8::D => &mut self.registers.d,
-            TargetRegister8::E => &mut self.registers.e,
-            TargetRegister8::H => &mut self.registers.h,
-            TargetRegister8::L => &mut self.registers.l,
-        }
-    }
-
-    fn get_r16_value(&self, target: TargetRegister16) -> u16 {
-        match target {
-            TargetRegister16::BC => self.registers.get_bc(),
-            TargetRegister16::DE => self.registers.get_de(),
-            TargetRegister16::HL => self.registers.get_hl(),
-        }
+        };
+        // Increment the program counter by one.
+        // Instructions that modify the PC differently return early.
+        self.pc.wrapping_add(1)
     }
 
     fn add_a(&mut self, target: TargetRegister8) {
