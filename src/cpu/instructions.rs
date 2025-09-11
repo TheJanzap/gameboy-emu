@@ -118,6 +118,7 @@ impl Cpu {
         self.pc.wrapping_add(1)
     }
 
+    /// Executes [`Instruction::Add`].
     fn add_a(&mut self, target: TargetRegister8) {
         let value = self.get_r8_value(target);
         let (new_value, did_overflow) = self.registers.a.overflowing_add(value);
@@ -129,6 +130,7 @@ impl Cpu {
         self.registers.a = new_value;
     }
 
+    /// Executes [`Instruction::AddHl`].
     fn add_hl(&mut self, target: TargetRegister16) {
         let value = self.get_r16_value(target);
         let (new_value, did_overflow) = self.registers.get_hl().overflowing_add(value);
@@ -140,6 +142,7 @@ impl Cpu {
         self.registers.set_hl(new_value);
     }
 
+    /// Executes [`Instruction::Adc`].
     fn add_with_carry(&mut self, target: TargetRegister8) {
         let old_carry = if self.registers.f.carry { 1 } else { 0 };
         let value = self.get_r8_value(target) + old_carry;
@@ -152,6 +155,8 @@ impl Cpu {
         self.registers.a = new_value;
     }
 
+    /// Executes [`Instruction::Cp`].
+    /// Returns the value so the implementation can be reused by [Instruction::Sub].
     fn compare(&mut self, target: TargetRegister8) -> u8 {
         let value = self.get_r8_value(target);
         let (new_value, did_overflow) = self.registers.a.overflowing_sub(value);
@@ -163,11 +168,13 @@ impl Cpu {
         new_value
     }
 
+    /// Executes [`Instruction::Sub`].
     fn sub(&mut self, target: TargetRegister8) {
         // Call compare logic and set the result
         self.registers.a = self.compare(target);
     }
 
+    /// Executes [`Instruction::Sbc`].
     fn sub_with_carry(&mut self, target: TargetRegister8) {
         let old_carry = if self.registers.f.carry { 1 } else { 0 };
         let value = self.get_r8_value(target) + old_carry;
@@ -180,6 +187,7 @@ impl Cpu {
         self.registers.a = new_value;
     }
 
+    /// Executes [`Instruction::And`].
     fn and(&mut self, target: TargetRegister8) {
         let value = self.get_r8_value(target);
         self.registers.f.zero = self.registers.a == 0;
@@ -189,6 +197,7 @@ impl Cpu {
         self.registers.a &= value;
     }
 
+    /// Executes [`Instruction::Or`].
     fn or(&mut self, target: TargetRegister8) {
         let value = self.get_r8_value(target);
         self.registers.f.zero = self.registers.a == 0;
@@ -198,6 +207,7 @@ impl Cpu {
         self.registers.a |= value;
     }
 
+    /// Executes [`Instruction::Xor`].
     fn xor(&mut self, target: TargetRegister8) {
         let value = self.get_r8_value(target);
         self.registers.f.zero = self.registers.a == 0;
@@ -207,6 +217,7 @@ impl Cpu {
         self.registers.a ^= value;
     }
 
+    /// Executes [`Instruction::Inc`].
     fn increment(&mut self, target: TargetRegister8) {
         let register = self.get_r8_ref(target);
 
@@ -217,6 +228,7 @@ impl Cpu {
         self.registers.f.half_carry = ((new_value - 1) & 0xF) + 1 > 0xF;
     }
 
+    /// Executes [`Instruction::Dec`].
     fn decrement(&mut self, target: TargetRegister8) {
         let register = self.get_r8_ref(target);
 
@@ -227,24 +239,28 @@ impl Cpu {
         self.registers.f.half_carry = (new_value & 0xF) + ((new_value + 1) & 0xF) >= 0xF;
     }
 
+    /// Executes [`Instruction::Ccf`].
     fn invert_carry_flag(&mut self) {
         self.registers.f.subtract = false;
         self.registers.f.half_carry = false;
         self.registers.f.carry = !self.registers.f.carry;
     }
 
+    /// Executes [`Instruction::Scf`].
     fn set_carry_flag(&mut self) {
         self.registers.f.subtract = false;
         self.registers.f.half_carry = false;
         self.registers.f.carry = true;
     }
 
+    /// Executes [`Instruction::Cpl`].
     fn complement_a(&mut self) {
         self.registers.f.subtract = true;
         self.registers.f.half_carry = true;
         self.registers.a = !self.registers.a;
     }
 
+    /// Executes [`Instruction::Bit`].
     fn test_bit(&mut self, index: U3, target: TargetRegister8) {
         let value = self.get_r8_value(target);
         let mask = 1 << index;
@@ -255,18 +271,21 @@ impl Cpu {
         self.registers.f.zero = !is_bit_set;
     }
 
+    /// Executes [`Instruction::Res`].
     fn unset_bit(&mut self, index: U3, target: TargetRegister8) {
         let register = self.get_r8_ref(target);
         let zero_bit = !(1 << index);
         *register &= zero_bit;
     }
 
+    /// Executes [`Instruction::Set`].
     fn set_bit(&mut self, index: U3, target: TargetRegister8) {
         let register = self.get_r8_ref(target);
         let one_bit = 1 << index;
         *register |= one_bit;
     }
 
+    /// Executes [`Instruction::Srl`].
     fn shift_right_logically(&mut self, target: TargetRegister8) {
         let register = self.get_r8_ref(target);
         let lsb = *register & 0b0000_0001;
@@ -278,6 +297,7 @@ impl Cpu {
         self.registers.f.carry = lsb == 1;
     }
 
+    /// Executes [`Instruction::Rr`].
     fn rotate_right_with_carry(&mut self, target: TargetRegister8) {
         let old_carry: u8 = if self.registers.f.carry { 1 } else { 0 };
         let register = self.get_r8_ref(target);
@@ -291,6 +311,7 @@ impl Cpu {
         self.registers.f.carry = is_lsb_set;
     }
 
+    /// Executes [`Instruction::Rla`].
     fn rotate_left_with_carry(&mut self, target: TargetRegister8) {
         let old_carry: u8 = if self.registers.f.carry { 1 } else { 0 };
         let register = self.get_r8_ref(target);
@@ -304,6 +325,7 @@ impl Cpu {
         self.registers.f.carry = is_msb_set;
     }
 
+    /// Executes [`Instruction::Rrc`].
     fn rotate_right_no_carry(&mut self, target: TargetRegister8) {
         let register = self.get_r8_ref(target);
         let lsb = *register & 0b0000_0001;
@@ -316,6 +338,7 @@ impl Cpu {
         self.registers.f.carry = lsb == 1;
     }
 
+    /// Executes [`Instruction::Rlc`].
     fn rotate_left_no_carry(&mut self, target: TargetRegister8) {
         let register = self.get_r8_ref(target);
         let msb = *register & 0b1000_0000;
@@ -328,6 +351,7 @@ impl Cpu {
         self.registers.f.carry = msb == 128;
     }
 
+    /// Executes [`Instruction::Sra`].
     fn shift_right_arithmetically(&mut self, target: TargetRegister8) {
         let register = self.get_r8_ref(target);
         let lsb = *register & 0b0000_0001;
@@ -339,6 +363,7 @@ impl Cpu {
         self.registers.f.carry = lsb == 1;
     }
 
+    /// Executes [`Instruction::Sla`].
     fn shift_left_arithmetically(&mut self, target: TargetRegister8) {
         let register = self.get_r8_ref(target);
         let msb = *register & 0b1000_0000;
@@ -350,6 +375,7 @@ impl Cpu {
         self.registers.f.carry = msb == 128;
     }
 
+    /// Executes [`Instruction::Swap`].
     fn swap(&mut self, target: TargetRegister8) {
         let register = self.get_r8_ref(target);
         let new_upper = (*register & 0b0000_1111) << 4;
