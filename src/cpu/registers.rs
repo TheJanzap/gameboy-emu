@@ -19,6 +19,11 @@ impl Registers {
     fn get_16_bit_register(&self, high: u8, low: u8) -> u16 {
         ((high as u16) << 8) | (low as u16)
     }
+
+    pub(super) fn get_af(&self) -> u16 {
+        (self.a as u16) << 8 | u8::from(self.f) as u16
+    }
+
     pub(super) fn get_bc(&self) -> u16 {
         self.get_16_bit_register(self.b, self.c)
     }
@@ -36,6 +41,11 @@ impl Registers {
         *low = value as u8;
     }
 
+    pub(super) fn set_af(&mut self, value: u16) {
+        self.a = ((value & 0xFF00) >> 8) as u8;
+        self.f = (value as u8).into();
+    }
+
     pub(super) fn set_bc(&mut self, value: u16) {
         Self::set_16_bit_register(&mut self.b, &mut self.c, value)
     }
@@ -51,7 +61,7 @@ impl Registers {
 
 /// The CPUs Flag register. 1 byte big. The values represent the upper 4 bits in the F register.
 /// The lower bits are always zero and can be ignored.
-#[derive(Default)]
+#[derive(Default, Copy, Clone)]
 pub(super) struct FlagsRegister {
     pub(super) zero: bool,
     pub(super) subtract: bool,

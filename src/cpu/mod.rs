@@ -16,6 +16,8 @@ struct Cpu {
     registers: Registers,
     /// The program counter of the CPU.
     pc: u16,
+    /// The stack pointer of the CPU.
+    sp: u16,
     bus: MemoryBus,
 }
 

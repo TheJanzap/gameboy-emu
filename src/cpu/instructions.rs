@@ -4,7 +4,8 @@ pub(crate) mod parameter;
 use super::Cpu;
 use super::registers::U3;
 use parameter::{
-    JumpTest, LoadByteSource, LoadByteTarget, LoadType, TargetRegister8, TargetRegister16,
+    JumpTest, LoadByteSource, LoadByteTarget, LoadType, StackTarget, TargetRegister8,
+    TargetRegister16,
 };
 
 /// The assembly instructions the emulator can execute.
@@ -72,6 +73,10 @@ pub(super) enum Instruction {
     Jp(JumpTest),
     /// Load a value into a register or memory location
     Ld(LoadType),
+    /// Push register r16 into the stack.
+    Push(StackTarget),
+    /// Pop register r16 from the stack.
+    Pop(StackTarget),
 }
 
 impl Instruction {
@@ -121,6 +126,8 @@ impl Cpu {
             Instruction::Swap(r8) => self.swap(r8),
             Instruction::Jp(test) => return self.jump(test),
             Instruction::Ld(load_type) => return self.load(load_type),
+            Instruction::Push(r16) => self.push(r16),
+            Instruction::Pop(r16) => self.pop(r16),
         };
         // Increment the program counter by one.
         // Instructions that modify the PC differently return early.
@@ -453,6 +460,42 @@ impl Cpu {
                 }
             }
             _ => todo!(),
+        }
+    }
+
+    /// Executes [`Instruction::Push`].
+    fn push(&mut self, target: StackTarget) {
+        let value = match target {
+            StackTarget::AF => self.registers.get_af(),
+            StackTarget::BC => self.registers.get_bc(),
+            StackTarget::DE => self.registers.get_de(),
+            StackTarget::HL => self.registers.get_hl(),
+        };
+        // Decrease the SP and write MSB of value into memory at location of SP
+        self.sp = self.sp.wrapping_sub(1);
+        self.bus.write_byte(self.sp, ((value & 0xFF00) >> 8) as u8);
+
+        // Decrease the SP and write LSB of value into memory at location of SP
+        self.sp = self.sp.wrapping_sub(1);
+        self.bus.write_byte(self.sp, (value & 0x00FF) as u8);
+    }
+
+    /// Executes [`Instruction::Pop`].
+    fn pop(&mut self, target: StackTarget) {
+        // Read LSB of value from memory at location of SP and increase the SP
+        let lsb = self.bus.read_byte(self.sp) as u16;
+        self.sp = self.sp.wrapping_add(1);
+
+        // Read MSB of value from memory at location of SP and increase the SP
+        let msb = self.bus.read_byte(self.sp) as u16;
+        self.sp = self.sp.wrapping_add(1);
+
+        let result = (msb << 8) | lsb;
+        match target {
+            StackTarget::AF => self.registers.set_af(result),
+            StackTarget::BC => self.registers.set_bc(result),
+            StackTarget::DE => self.registers.set_de(result),
+            StackTarget::HL => self.registers.set_hl(result),
         }
     }
 }

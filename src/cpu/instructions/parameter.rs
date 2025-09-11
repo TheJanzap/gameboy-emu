@@ -78,3 +78,11 @@ pub(super) enum LoadByteSource {
     /// Sometimes written as `[hl+]`.
     Hli,
 }
+
+/// Where [`super::Instruction::Push`] will store its data.
+pub(super) enum StackTarget {
+    AF,
+    BC,
+    DE,
+    HL,
+}
