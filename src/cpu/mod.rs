@@ -74,4 +74,9 @@ impl Cpu {
             TargetRegister16::HL => self.registers.get_hl(),
         }
     }
+
+    /// Reads the next byte in memory.
+    fn read_next_byte(&self) -> u8 {
+        self.bus.read_byte(self.pc.wrapping_add(1))
+    }
 }

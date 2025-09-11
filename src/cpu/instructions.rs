@@ -3,7 +3,9 @@ pub(crate) mod parameter;
 
 use super::Cpu;
 use super::registers::U3;
-use parameter::{JumpTest, LoadType, TargetRegister8, TargetRegister16};
+use parameter::{
+    JumpTest, LoadByteSource, LoadByteTarget, LoadType, TargetRegister8, TargetRegister16,
+};
 
 /// The assembly instructions the emulator can execute.
 pub(super) enum Instruction {
@@ -68,6 +70,8 @@ pub(super) enum Instruction {
     /// Jumps to a specified address if the specified condition is met:
     /// Zero flag set/not set, Carry flag set/not set or always jump
     Jp(JumpTest),
+    /// Load a value into a register or memory location
+    Ld(LoadType),
 }
 
 impl Instruction {
@@ -116,6 +120,7 @@ impl Cpu {
             Instruction::Sla(r8) => self.shift_left_arithmetically(r8),
             Instruction::Swap(r8) => self.swap(r8),
             Instruction::Jp(test) => return self.jump(test),
+            Instruction::Ld(load_type) => return self.load(load_type),
         };
         // Increment the program counter by one.
         // Instructions that modify the PC differently return early.
@@ -410,6 +415,44 @@ impl Cpu {
             // Condition not met, move to the next instruction
             // A jump instruction is 3 bytes wide (1 byte tag, 2 bytes jump address)
             self.pc.wrapping_add(3)
+        }
+    }
+
+    /// Executes [`Instruction::Ld`].
+    fn load(&mut self, load_type: LoadType) -> u16 {
+        match load_type {
+            LoadType::Byte(target, source) => {
+                let source_value = match source {
+                    LoadByteSource::A => self.registers.a,
+                    LoadByteSource::B => self.registers.b,
+                    LoadByteSource::C => self.registers.c,
+                    LoadByteSource::D => self.registers.d,
+                    LoadByteSource::E => self.registers.e,
+                    LoadByteSource::H => self.registers.h,
+                    LoadByteSource::L => self.registers.l,
+                    LoadByteSource::D8 => self.read_next_byte(),
+                    LoadByteSource::Hli => self.bus.read_byte(self.registers.get_hl()),
+                };
+
+                match target {
+                    LoadByteTarget::A => self.registers.a = source_value,
+                    LoadByteTarget::B => self.registers.b = source_value,
+                    LoadByteTarget::C => self.registers.c = source_value,
+                    LoadByteTarget::D => self.registers.d = source_value,
+                    LoadByteTarget::E => self.registers.e = source_value,
+                    LoadByteTarget::H => self.registers.h = source_value,
+                    LoadByteTarget::L => self.registers.l = source_value,
+                    LoadByteTarget::Hli => {
+                        self.bus.write_byte(self.registers.get_hl(), source_value)
+                    }
+                }
+
+                match source {
+                    LoadByteSource::D8 => self.pc.wrapping_add(2),
+                    _ => self.pc.wrapping_add(1),
+                }
+            }
+            _ => todo!(),
         }
     }
 }

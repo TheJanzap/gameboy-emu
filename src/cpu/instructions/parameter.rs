@@ -32,3 +32,49 @@ pub(super) enum JumpTest {
     /// Jump unconditionally.
     Always,
 }
+
+/// Different ways [crate::cpu::instructions::Instruction] can load data.
+pub(super) enum LoadType {
+    /// Load 8-bit values from one place to another.
+    Byte(LoadByteTarget, LoadByteSource),
+    /// Load 16-bit values from one place to another.
+    Word,
+    /// Load the contents of address into the `A` register.
+    AFromIndirect,
+    /// Load the contents of the `A` register into the location of address
+    IndirectFromA,
+    /// Load the contents of the memory address stored at the very last byte of memory
+    /// into register `A`.
+    AFromByteAddress,
+    /// Load the contents of the `A` register into the location of the address stored at the
+    /// very last byte of memory.
+    ByteAddressFromA,
+}
+
+pub(super) enum LoadByteTarget {
+    A,
+    B,
+    C,
+    D,
+    E,
+    H,
+    L,
+    /// HL Incremented, the value in HL is incremented after it is accessed.
+    /// Sometimes written as `[hl+]`.
+    Hli,
+}
+
+pub(super) enum LoadByteSource {
+    A,
+    B,
+    C,
+    D,
+    E,
+    H,
+    L,
+    /// Direct 8-bit value, stored directly after instruction.
+    D8,
+    /// HL Incremented, the value in HL is incremented after it is accessed.
+    /// Sometimes written as `[hl+]`.
+    Hli,
+}
