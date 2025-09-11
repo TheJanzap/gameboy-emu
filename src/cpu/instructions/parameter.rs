@@ -18,3 +18,17 @@ pub(crate) enum TargetRegister16 {
     DE,
     HL,
 }
+
+/// What flag state a jump should check.
+pub(super) enum JumpTest {
+    /// Jump if the zero flag is not set.
+    NotZero,
+    /// Jump if the zero flag is set.
+    Zero,
+    /// Jump if the carry flag is not set.
+    NotCarry,
+    /// Jump if the carry flag is set.
+    Carry,
+    /// Jump unconditionally.
+    Always,
+}

@@ -3,7 +3,7 @@ pub(crate) mod parameter;
 
 use super::Cpu;
 use super::registers::U3;
-use parameter::{TargetRegister8, TargetRegister16};
+use parameter::{JumpTest, LoadType, TargetRegister8, TargetRegister16};
 
 /// The assembly instructions the emulator can execute.
 pub(super) enum Instruction {
@@ -65,6 +65,9 @@ pub(super) enum Instruction {
     Sla(TargetRegister8),
     /// Swap the upper 4 bits with the lower 4 ones in r8
     Swap(TargetRegister8),
+    /// Jumps to a specified address if the specified condition is met:
+    /// Zero flag set/not set, Carry flag set/not set or always jump
+    Jp(JumpTest),
 }
 
 impl Instruction {
@@ -112,6 +115,7 @@ impl Cpu {
             Instruction::Sra(r8) => self.shift_right_arithmetically(r8),
             Instruction::Sla(r8) => self.shift_left_arithmetically(r8),
             Instruction::Swap(r8) => self.swap(r8),
+            Instruction::Jp(test) => return self.jump(test),
         };
         // Increment the program counter by one.
         // Instructions that modify the PC differently return early.
@@ -386,6 +390,27 @@ impl Cpu {
         self.registers.f.subtract = false;
         self.registers.f.half_carry = false;
         self.registers.f.carry = false;
+    }
+
+    /// Executes [`Instruction::Jp`].
+    fn jump(&mut self, condition: JumpTest) -> u16 {
+        let should_jump = match condition {
+            JumpTest::Zero => self.registers.f.zero,
+            JumpTest::NotZero => !self.registers.f.zero,
+            JumpTest::Carry => self.registers.f.carry,
+            JumpTest::NotCarry => !self.registers.f.carry,
+            JumpTest::Always => true,
+        };
+        if should_jump {
+            // The Game Boy is little endian: Read lsb first
+            let lsb = self.bus.read_byte(self.pc + 1) as u16;
+            let msb = self.bus.read_byte(self.pc + 2) as u16;
+            (msb << 8) | lsb
+        } else {
+            // Condition not met, move to the next instruction
+            // A jump instruction is 3 bytes wide (1 byte tag, 2 bytes jump address)
+            self.pc.wrapping_add(3)
+        }
     }
 }
 
