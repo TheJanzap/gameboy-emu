@@ -70,7 +70,7 @@ pub(super) enum Instruction {
 impl Instruction {
     /// Convert a byte stored in memory into an Instruction.
     /// If `prefixed` is set, the byte will be interpreted as the start of a prefix instruction.
-    /// Returns `None` if the opcode is invalid.
+    /// Returns [`None`] if the opcode is invalid.
     pub(super) fn from_byte(byte: u8, prefixed: bool) -> Option<Self> {
         match prefixed {
             true => opcodes::get_opcode_unprefixed(byte),

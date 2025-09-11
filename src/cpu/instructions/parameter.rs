@@ -1,6 +1,7 @@
 //! Contains all parameter types for the CPU instructions.
 
-/// Which 8-bit register an instruction should affect. Note that F is missing.
+/// Which 8-bit register an instruction should affect.
+/// Note that F is missing, as it cannot be the target of an Instruction.
 pub(crate) enum TargetRegister8 {
     A,
     B,

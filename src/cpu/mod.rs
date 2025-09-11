@@ -8,12 +8,13 @@ use registers::Registers;
 mod instructions;
 mod registers;
 
-/// Byte that indicates a prefix instruction
+/// Byte that indicates a prefix instruction.
 const PREFIX_BYTE: u8 = 0xCB;
 
 #[derive(Default)]
 struct Cpu {
     registers: Registers,
+    /// The program counter of the CPU.
     pc: u16,
     bus: MemoryBus,
 }
@@ -65,6 +66,7 @@ impl Cpu {
         }
     }
 
+    /// Gets the value of an 16-bit register.
     fn get_r16_value(&self, target: TargetRegister16) -> u16 {
         match target {
             TargetRegister16::BC => self.registers.get_bc(),

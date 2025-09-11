@@ -49,14 +49,14 @@ impl Registers {
     }
 }
 
-/// The CPUs Flag register. 1 byte big. The values represent the upper 4 bits.
+/// The CPUs Flag register. 1 byte big. The values represent the upper 4 bits in the F register.
 /// The lower bits are always zero and can be ignored.
 #[derive(Default)]
 pub(super) struct FlagsRegister {
     pub(super) zero: bool,
     pub(super) subtract: bool,
     /// Set if adding the lower nibbles of a value and a register together result
-    /// in a value bigger than 0xF.
+    /// in a value bigger than `0xF`.
     pub(super) half_carry: bool,
     pub(super) carry: bool,
 }
@@ -91,18 +91,20 @@ impl From<u8> for FlagsRegister {
     }
 }
 
-/// Index for the bits inside a register
+/// Index to address the individual bits 0-7 inside a register.
 #[derive(Copy, Clone)]
 pub(super) struct U3(u8);
 
 impl U3 {
     pub const MAX: u8 = 0b111; // 7
+
+    /// Create a new valid index in the range `[0..=7]`.
     pub fn wrap(value: u8) -> Self {
         Self(value & Self::MAX)
     }
 }
 
-/// Implement the ">>" operator for U3
+/// Implement the `>>` operator for U3
 impl Shr<U3> for u8 {
     type Output = u8;
 
@@ -111,7 +113,7 @@ impl Shr<U3> for u8 {
     }
 }
 
-/// Implement the ">>" operator for U3
+/// Implement the `>>` operator for U3
 impl Shl<U3> for u8 {
     type Output = u8;
 

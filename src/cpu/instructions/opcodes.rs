@@ -1,10 +1,10 @@
-//! Contains the optable that maps all opcodes to their respective instruction
+//! Contains the optable that maps all opcodes to their respective instruction.
 //! Taken from the opcode reference at <https://gbdev.io/gb-opcodes/optables/>
 use crate::cpu::instructions::{Instruction, TargetRegister8};
 use crate::cpu::registers::U3;
 
 /// Gets the instruction associated with the opcode without the `0xCB` prefix.
-/// The invalid opcodes return `None`.
+/// The invalid opcodes return [`None`].
 pub(super) fn get_opcode_unprefixed(byte: u8) -> Option<Instruction> {
     match byte {
         _ => todo!(),
