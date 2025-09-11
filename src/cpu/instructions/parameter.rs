@@ -33,7 +33,7 @@ pub(super) enum JumpTest {
     Always,
 }
 
-/// Different ways [crate::cpu::instructions::Instruction] can load data.
+/// Different ways [`super::Instruction`] can load data.
 pub(super) enum LoadType {
     /// Load 8-bit values from one place to another.
     Byte(LoadByteTarget, LoadByteSource),
@@ -51,6 +51,7 @@ pub(super) enum LoadType {
     ByteAddressFromA,
 }
 
+/// Where [`super::Instruction::Ld`] will load its data from.
 pub(super) enum LoadByteTarget {
     A,
     B,
@@ -64,6 +65,7 @@ pub(super) enum LoadByteTarget {
     Hli,
 }
 
+/// Where [`super::Instruction::Ld`] will store its data to.
 pub(super) enum LoadByteSource {
     A,
     B,
