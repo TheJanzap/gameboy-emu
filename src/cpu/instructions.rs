@@ -83,6 +83,11 @@ pub(super) enum Instruction {
     /// Return from subroutine if condition is met.
     /// This is basically a `POP PC` (if such an instruction existed).
     Ret(JumpTest),
+    /// No Operation. Does nothing.
+    Nop,
+    /// Enter CPU low-power consumption mode until an interrupt occurs.
+    /// In our case, will set [Cpu::is_halted] to true and end the [Cpu::execute] cycle.
+    Halt,
 }
 
 impl Instruction {
@@ -100,6 +105,10 @@ impl Instruction {
 impl Cpu {
     /// Execute an instruction on the CPU
     pub(super) fn execute(&mut self, instruction: Instruction) -> u16 {
+        if self.is_halted {
+            return 0;
+        }
+
         match instruction {
             Instruction::Add(r8) => self.add_a(r8),
             Instruction::AddHl(r8) => self.add_hl(r8),
@@ -139,6 +148,8 @@ impl Cpu {
             }
             Instruction::Call(condition) => return self.call(condition),
             Instruction::Ret(condition) => return self.ret(condition),
+            Instruction::Nop => (),
+            Instruction::Halt => self.is_halted = true,
         };
         // Increment the program counter by one.
         // Instructions that modify the PC differently return early.
