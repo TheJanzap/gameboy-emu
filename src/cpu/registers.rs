@@ -41,6 +41,8 @@ impl Registers {
         *low = value as u8;
     }
 
+    /// Note that due to the flags register only using the upper 4 bits,
+    /// the lower 4 bits will be dropped.
     pub(super) fn set_af(&mut self, value: u16) {
         self.a = ((value & 0xFF00) >> 8) as u8;
         self.f = (value as u8).into();
@@ -142,6 +144,25 @@ mod tests {
         registers.set_bc(value);
         let result = registers.get_bc();
         assert_eq!(result, value);
+    }
+
+    #[test]
+    fn set_and_read_af() {
+        let mut registers = Registers::default();
+        let value = 0xBEE0;
+        registers.set_af(value);
+        let result = registers.get_af();
+        assert_eq!(result, value);
+    }
+
+    #[test]
+    fn af_drops_lower_4_bits() {
+        let mut registers = Registers::default();
+        let input = 0xBEEF;
+        let output = 0xBEE0;
+        registers.set_af(input);
+        let result = registers.get_af();
+        assert_eq!(result, output);
     }
 
     #[test]
