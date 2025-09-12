@@ -663,3 +663,25 @@ fn swap() {
     assert_eq!(cpu.registers.f.half_carry, false);
     assert_eq!(cpu.registers.f.carry, false);
 }
+
+#[test]
+fn push_pop() {
+    let mut cpu = Cpu::default();
+    let first = 0xABCD;
+    let second = 0xBEEF;
+
+    cpu.registers.set_bc(first);
+    cpu.registers.set_hl(second);
+
+    let first_push = Instruction::Push(StackTarget::BC);
+    let second_push = Instruction::Push(StackTarget::HL);
+    let first_pop = Instruction::Pop(StackTarget::DE);
+    let second_pop = Instruction::Pop(StackTarget::HL);
+    cpu.execute(first_push);
+    cpu.execute(second_push);
+    cpu.execute(first_pop);
+    cpu.execute(second_pop);
+
+    assert_eq!(cpu.registers.get_de(), second);
+    assert_eq!(cpu.registers.get_hl(), first);
+}

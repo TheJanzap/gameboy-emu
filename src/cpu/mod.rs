@@ -11,7 +11,7 @@ mod registers;
 /// Byte that indicates a prefix instruction.
 const PREFIX_BYTE: u8 = 0xCB;
 
-#[derive(Default)]
+
 struct Cpu {
     registers: Registers,
     /// The program counter of the CPU.
@@ -19,6 +19,17 @@ struct Cpu {
     /// The stack pointer of the CPU.
     sp: u16,
     bus: MemoryBus,
+}
+
+impl Default for Cpu {
+    fn default() -> Self {
+        Self {
+            registers: Registers::default(),
+            pc: u16::default(),
+            sp: u16::MAX,
+            bus: MemoryBus::default(),
+        }
+    }
 }
 
 impl Cpu {
