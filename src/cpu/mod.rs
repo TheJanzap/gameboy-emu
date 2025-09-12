@@ -1,7 +1,7 @@
 use crate::memory_bus::MemoryBus;
 use instructions::{
     Instruction,
-    parameter::{TargetRegister8, TargetRegister16},
+    parameter::{JumpTest, StackTarget, TargetRegister8, TargetRegister16},
 };
 use registers::Registers;
 
@@ -80,5 +80,41 @@ impl Cpu {
     /// Reads the next byte in memory.
     fn read_next_byte(&self) -> u8 {
         self.bus.read_byte(self.pc.wrapping_add(1))
+    }
+
+    /// Reads the next two bytes in memory and combines them to a 16-bit value.
+    fn read_next_word(&self) -> u16 {
+        ((self.bus.read_byte(self.pc + 2) as u16) << 8) | (self.bus.read_byte(self.pc + 1) as u16)
+    }
+
+    /// Gets the value associated with each [`Instruction`]s [JumpTest].
+    fn get_jump_test_result(&self, condition: JumpTest) -> bool {
+        match condition {
+            JumpTest::Zero => self.registers.f.zero,
+            JumpTest::NotZero => !self.registers.f.zero,
+            JumpTest::Carry => self.registers.f.carry,
+            JumpTest::NotCarry => !self.registers.f.carry,
+            JumpTest::Always => true,
+        }
+    }
+
+    /// Gets the value that should be pushed on the stack from the specified register.
+    fn get_stack_target_value(&self, target: StackTarget) -> u16 {
+        match target {
+            StackTarget::AF => self.registers.get_af(),
+            StackTarget::BC => self.registers.get_bc(),
+            StackTarget::DE => self.registers.get_de(),
+            StackTarget::HL => self.registers.get_hl(),
+        }
+    }
+
+    /// Sets the value that is popped of the stack into the specified register.
+    fn set_stack_target_value(&mut self, target: StackTarget, value: u16) {
+        match target {
+            StackTarget::AF => self.registers.set_af(value),
+            StackTarget::BC => self.registers.set_bc(value),
+            StackTarget::DE => self.registers.set_de(value),
+            StackTarget::HL => self.registers.set_hl(value),
+        }
     }
 }

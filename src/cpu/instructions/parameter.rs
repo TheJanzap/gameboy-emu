@@ -20,7 +20,7 @@ pub(crate) enum TargetRegister16 {
 }
 
 /// What flag state a jump should check.
-pub(super) enum JumpTest {
+pub(crate) enum JumpTest {
     /// Jump if the zero flag is not set.
     NotZero,
     /// Jump if the zero flag is set.
@@ -82,7 +82,7 @@ pub(super) enum LoadByteSource {
 }
 
 /// Where [`super::Instruction::Push`] will store its data.
-pub(super) enum StackTarget {
+pub(crate) enum StackTarget {
     AF,
     BC,
     DE,

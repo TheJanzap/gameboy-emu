@@ -77,6 +77,12 @@ pub(super) enum Instruction {
     Push(StackTarget),
     /// Pop register r16 from the stack.
     Pop(StackTarget),
+    /// Call address n16 if condition cc is met. This pushes the address of the instruction after
+    /// the CALL on the stack, such that RET can pop it later; then, it executes an implicit JP n16.
+    Call(JumpTest),
+    /// Return from subroutine if condition is met.
+    /// This is basically a `POP PC` (if such an instruction existed).
+    Ret(JumpTest),
 }
 
 impl Instruction {
@@ -124,10 +130,15 @@ impl Cpu {
             Instruction::Sra(r8) => self.shift_right_arithmetically(r8),
             Instruction::Sla(r8) => self.shift_left_arithmetically(r8),
             Instruction::Swap(r8) => self.swap(r8),
-            Instruction::Jp(test) => return self.jump(test),
+            Instruction::Jp(condition) => return self.jump(condition),
             Instruction::Ld(load_type) => return self.load(load_type),
-            Instruction::Push(r16) => self.push(r16),
-            Instruction::Pop(r16) => self.pop(r16),
+            Instruction::Push(r16) => self.push(self.get_stack_target_value(r16)),
+            Instruction::Pop(r16) => {
+                let res = self.pop();
+                self.set_stack_target_value(r16, res)
+            }
+            Instruction::Call(condition) => return self.call(condition),
+            Instruction::Ret(condition) => return self.ret(condition),
         };
         // Increment the program counter by one.
         // Instructions that modify the PC differently return early.
@@ -406,13 +417,7 @@ impl Cpu {
 
     /// Executes [`Instruction::Jp`].
     fn jump(&mut self, condition: JumpTest) -> u16 {
-        let should_jump = match condition {
-            JumpTest::Zero => self.registers.f.zero,
-            JumpTest::NotZero => !self.registers.f.zero,
-            JumpTest::Carry => self.registers.f.carry,
-            JumpTest::NotCarry => !self.registers.f.carry,
-            JumpTest::Always => true,
-        };
+        let should_jump = self.get_jump_test_result(condition);
         if should_jump {
             // The Game Boy is little endian: Read lsb first
             let lsb = self.bus.read_byte(self.pc + 1) as u16;
@@ -464,13 +469,7 @@ impl Cpu {
     }
 
     /// Executes [`Instruction::Push`].
-    fn push(&mut self, target: StackTarget) {
-        let value = match target {
-            StackTarget::AF => self.registers.get_af(),
-            StackTarget::BC => self.registers.get_bc(),
-            StackTarget::DE => self.registers.get_de(),
-            StackTarget::HL => self.registers.get_hl(),
-        };
+    fn push(&mut self, value: u16) {
         // Decrease the SP and write MSB of value into memory at location of SP
         self.sp = self.sp.wrapping_sub(1);
         self.bus.write_byte(self.sp, ((value & 0xFF00) >> 8) as u8);
@@ -481,7 +480,7 @@ impl Cpu {
     }
 
     /// Executes [`Instruction::Pop`].
-    fn pop(&mut self, target: StackTarget) {
+    fn pop(&mut self) -> u16 {
         // Read LSB of value from memory at location of SP and increase the SP
         let lsb = self.bus.read_byte(self.sp) as u16;
         self.sp = self.sp.wrapping_add(1);
@@ -490,12 +489,29 @@ impl Cpu {
         let msb = self.bus.read_byte(self.sp) as u16;
         self.sp = self.sp.wrapping_add(1);
 
-        let result = (msb << 8) | lsb;
-        match target {
-            StackTarget::AF => self.registers.set_af(result),
-            StackTarget::BC => self.registers.set_bc(result),
-            StackTarget::DE => self.registers.set_de(result),
-            StackTarget::HL => self.registers.set_hl(result),
+        (msb << 8) | lsb
+    }
+
+    /// Executes [`Instruction::Call`].
+    fn call(&mut self, condition: JumpTest) -> u16 {
+        let should_jump = self.get_jump_test_result(condition);
+        // Set the PC to the instruction after the 3-byte wide `Call` instruction
+        let next_pc = self.sp.wrapping_add(3);
+        if should_jump {
+            self.push(next_pc);
+            self.read_next_word()
+        } else {
+            next_pc
+        }
+    }
+
+    /// Executes [`Instruction::Ret`].
+    fn ret(&mut self, condition: JumpTest) -> u16 {
+        let should_jump = self.get_jump_test_result(condition);
+        if should_jump {
+            self.pop()
+        } else {
+            self.pc.wrapping_add(1)
         }
     }
 }
