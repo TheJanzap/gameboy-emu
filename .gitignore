@@ -1,1 +1,8 @@
+# Build output
 /target
+
+# VSCode settings
+/.vscode
+
+# RustRover settings
+/.idea
