@@ -1,5 +1,6 @@
-use crate::memory_map::*;
 use super::gpu::{GPU, VRAM_BEGIN, VRAM_END};
+use super::interrupts::InterruptFlags;
+use crate::memory_map::*;
 
 pub(super) struct MemoryBus {
     /// The boot ROM of the emulator. Gets unloaded after the code from the cartridge has been loaded.
@@ -9,6 +10,14 @@ pub(super) struct MemoryBus {
     cartridge_ram: [u8; CARTRIDGE_RAM_SIZE],
     working_ram: [u8; WORKING_RAM_SIZE],
     high_ram: [u8; HIGH_RAM_SIZE],
+    /// The interrupt master enable flag. Controls whether _any_ type of interrupt is handled.
+    /// Can only be written to, not read from. Set by `EI`, `DI` and `RETI` instructions.
+    ime: bool,
+    /// Controls whether the corresponding interrupt handler may be called.
+    interrupt_enable: InterruptFlags,
+    /// Controls whether the corresponding interrupt handler is being requested.
+    /// The execution of an interrupt only happens if both [`Self.ime`] and [`Self.interrupt_enable`] are true.
+    interrupt_flag: InterruptFlags,
     gpu: GPU,
 }
 
@@ -21,6 +30,9 @@ impl Default for MemoryBus {
             cartridge_ram: [0; CARTRIDGE_RAM_SIZE],
             working_ram: [0; WORKING_RAM_SIZE],
             high_ram: [0; HIGH_RAM_SIZE],
+            ime: false,
+            interrupt_enable: InterruptFlags::default(),
+            interrupt_flag: InterruptFlags::default(),
             gpu: GPU::default(),
         }
     }
@@ -52,7 +64,7 @@ impl MemoryBus {
             }
             UNUSED_MEMORY_START..=UNUSED_MEMORY_END => 0,
             HIGH_RAM_START..=HIGH_RAM_END => self.high_ram[address - HIGH_RAM_START],
-            INTERRUPT_ENABLE_REGISTER => self.interrupt_enable(),
+            INTERRUPT_ENABLE_REGISTER => self.interrupt_enable.into(),
             _ => unreachable!("Memory address out of bounds: 0x{:x}", address),
         }
     }
@@ -75,7 +87,7 @@ impl MemoryBus {
             }
             UNUSED_MEMORY_START..=UNUSED_MEMORY_END => (),
             HIGH_RAM_START..=HIGH_RAM_END => self.high_ram[address - HIGH_RAM_START] = value,
-            INTERRUPT_ENABLE_REGISTER => todo!(),
+            INTERRUPT_ENABLE_REGISTER => self.interrupt_enable = value.into(),
             _ => unreachable!("Memory address out of bounds: 0x{:x}", address),
         }
     }
@@ -85,10 +97,6 @@ impl MemoryBus {
     }
 
     fn write_io_register(&mut self, address: usize, value: u8) {
-        todo!()
-    }
-
-    fn interrupt_enable(&self) -> u8 {
         todo!()
     }
 }
