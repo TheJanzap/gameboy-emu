@@ -1,8 +1,16 @@
+//! The Game Boy groups pixels in 8x8 squares called Tiles. Tile data is stored between `0x8000` and
+//! `0x97FF`, where two different tile sets are stored. The first tile set resides at `0x8000` to
+//! `0x8FFF`, while the second occupies `0x8800` to `0x97FF` -- meaning the chunk between `0x8800`
+//! to `0x8FFF` is shared by the two tile sets.
+
+use crate::memory_map::OAM_SIZE;
+
 pub(super) const VRAM_BEGIN: usize = 0x8000;
 pub(super) const VRAM_END: usize = 0x9FFF;
 const VRAM_SIZE: usize = VRAM_END - VRAM_BEGIN + 1;
 const TILESET_STORAGE_END: usize = 0x1800;
 
+/// Each tile stores a color index for each of its pixels, ranging from 0 to 3
 #[derive(Copy, Clone)]
 enum TilePixelValue {
     Zero,
@@ -20,6 +28,9 @@ fn empty_tile() -> Tile {
 pub(super) struct GPU {
     vram: [u8; VRAM_SIZE],
     tile_set: [Tile; 384],
+    /// The Object Attribute Memory (OAM) stores objects.
+    /// These can be moved independently of the background.
+    oam: [u8; OAM_SIZE],
 }
 
 impl Default for GPU {
@@ -27,6 +38,7 @@ impl Default for GPU {
         Self {
             vram: [0; VRAM_SIZE],
             tile_set: [empty_tile(); 384],
+            oam: [0; OAM_SIZE],
         }
     }
 }
@@ -71,5 +83,13 @@ impl GPU {
 
             self.tile_set[tile_index][row_index][pixel_index] = value;
         }
+    }
+
+    pub(super) fn read_oam(&self, address: usize) -> u8 {
+        self.oam[address]
+    }
+
+    pub(super) fn write_oam(&mut self, address: usize, value: u8) {
+        todo!()
     }
 }
